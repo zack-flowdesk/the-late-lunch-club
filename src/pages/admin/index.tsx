@@ -1,16 +1,31 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {useVoting} from '../../context/voting';
+import {addMember, fetchMembers, removeMember} from "../../service/MemberService";
 
 const AdminPage: React.FC = () => {
     const {startVoting, endVoting, isVotingActive} = useVoting();
     const [members, setMembers] = useState<string[]>([]);
     const [newMember, setNewMember] = useState('');
 
-    const handleAddMember = () => {
+    useEffect(() => {
+        const loadMembers = async () => {
+            const fetchedMembers = await fetchMembers();
+            setMembers(fetchedMembers);
+        };
+        loadMembers();
+    }, []);
+
+    const handleAddMember = async () => {
         if (newMember) {
-            setMembers([...members, newMember]);
+            await addMember(newMember);
+            setMembers((prevMembers) => [...prevMembers, newMember]);
             setNewMember('');
         }
+    };
+
+    const handleRemoveMember = async (memberToRemove: string) => {
+        await removeMember(memberToRemove);
+        setMembers((prevMembers) => prevMembers.filter(member => member !== memberToRemove));
     };
 
     return (
@@ -27,7 +42,10 @@ const AdminPage: React.FC = () => {
                 <button onClick={handleAddMember}>Add Member</button>
                 <ul>
                     {members.map((member, index) => (
-                        <li key={index}>{member}</li>
+                        <li key={index}>
+                            {member}
+                            <button onClick={() => handleRemoveMember(member)}>Remove</button>
+                        </li>
                     ))}
                 </ul>
             </div>
