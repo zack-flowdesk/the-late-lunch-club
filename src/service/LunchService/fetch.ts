@@ -1,6 +1,17 @@
 import {ethers} from "ethers";
 import contractABI from './IdeaVoting.json'; // Adjust the path if necessary
 
+
+export const mockLunchIdeas = ['Pizza', 'Sushi', 'Burgers'];
+
+export const newFetchLunchIdeas = async (): Promise<string[]> => {
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            resolve(mockLunchIdeas);
+        }, 1000);
+    });
+};
+
 export const fetchLunchIdeas = async (): Promise<string[]> => {
     const providerUrl = 'https://gnosis-mainnet.public.blastapi.io';
     const provider = new ethers.JsonRpcProvider(providerUrl);
