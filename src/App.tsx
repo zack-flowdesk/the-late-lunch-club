@@ -1,95 +1,57 @@
-import React, {useEffect, useState} from 'react';
-import {ethers} from 'ethers';
-import detectEthereumProvider from '@metamask/detect-provider';
+import React, { useEffect, useState } from 'react';
+import { ethers } from 'ethers';
 
 const App: React.FC = () => {
-    const [balance, setBalance] = useState<string | null>(null);
-    const [address, setAddress] = useState<string | null>(null);
-    const [error, setError] = useState<string | null>(null);
-    const [networkError, setNetworkError] = useState<string | null>(null);
+  const [balance, setBalance] = useState<string | null>(null);
+  const [address, setAddress] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-    // Function to prompt user to switch to Gnosis Chain
-    const switchToGnosisChain = async (provider: any) => {
-        try {
-            await provider.request({
-                method: 'wallet_addEthereumChain',
-                params: [
-                    {
-                        chainId: '0x64', // Gnosis Chain's chain ID
-                        chainName: 'Gnosis Chain',
-                        rpcUrls: ['https://rpc.gnosischain.com/'],
-                        nativeCurrency: {
-                            name: 'xDAI',
-                            symbol: 'xDAI',
-                            decimals: 18,
-                        },
-                        blockExplorerUrls: ['https://gnosisscan.io/'],
-                    },
-                ],
-            });
-            setNetworkError(null); // Clear network error once switched
-        } catch (switchError) {
-            console.error('Failed to switch network:', switchError);
-            setNetworkError('Could not switch to Gnosis Chain.');
-        }
-    };
+  // Function to connect to the blockchain and fetch balance
+  const connectToBlockchain = async () => {
+    try {
+      // Initialize provider
+      const provider = new ethers.JsonRpcProvider(process.env.REACT_APP_GNOSIS_RPC_URL);
+      // const provider = new ethers.providers.Web3Provider(window.ethereum)
 
-    // Connect MetaMask and check the network
-    const connectToMetaMask = async () => {
-        try {
-            const provider: any = await detectEthereumProvider();
 
-            if (provider) {
-                await provider.request({method: 'eth_requestAccounts'});
+      // Initialize signer from private key (not ideal for production, use Metamask or wallet connect instead)
+      const privateKey = process.env.REACT_APP_PRIVATE_KEY;
+      if (!privateKey) {
+        throw new Error('Private key is missing');
+      }
 
-                // Check the current network
-                const chainId = await provider.request({method: 'eth_chainId'});
-                if (chainId !== '0x64') {
-                    setNetworkError('Please switch to the Gnosis Chain.');
-                    await switchToGnosisChain(provider);
-                    return;
-                }
+      const wallet = new ethers.Wallet(privateKey, provider);
 
-                // Initialize ethers provider and get the signer
-                const ethersProvider = new ethers.BrowserProvider(provider);
-                const signer = await ethersProvider.getSigner();
-                const userAddress = await signer.getAddress();
-                setAddress(userAddress);
+      // Set the address of the wallet
+      setAddress(wallet.address);
 
-                // Get the user's balance
-                const userBalance = await ethersProvider.getBalance(userAddress);
-                setBalance(ethers.formatEther(userBalance)); // Convert to Ether
-            } else {
-                setError('MetaMask not detected. Please install MetaMask to use this dApp.');
-            }
-        } catch (err) {
-            console.error('Error connecting to MetaMask:', err);
-            setError('Failed to connect to MetaMask.');
-        }
-    };
+      // Fetch and format balance
+      const balance = await provider.getBalance(wallet.address);
+      setBalance(ethers.formatEther(balance)); // Converts Wei to Ether
+    } catch (err) {
+      console.error('Error connecting to blockchain:', err);
+      setError('Failed to connect to blockchain.');
+    }
+  };
 
-    useEffect(() => {
-        connectToMetaMask();
-    }, []);
+  // Use effect to run once on component mount
+  useEffect(() => {
+    connectToBlockchain();
+  }, []);
 
-    return (
-        <div style={{padding: '20px'}}>
-            <h1>Gnosis Chain React dApp with MetaMask</h1>
-            {error ? (
-                <p style={{color: 'red'}}>{error}</p>
-            ) : networkError ? (
-                <div>
-                    <p style={{color: 'orange'}}>{networkError}</p>
-                    <button onClick={() => connectToMetaMask()}>Switch to Gnosis Chain</button>
-                </div>
-            ) : (
-                <>
-                    <p>Connected to: {address || 'Connecting...'}</p>
-                    <p>Balance: {balance ? `${balance} xDAI` : 'Fetching balance...'}</p>
-                </>
-            )}
-        </div>
-    );
+  return (
+      <div style={{ padding: '20px' }}>
+        <h1>Gnosis Chain React dApp</h1>
+        {error ? (
+            <p style={{ color: 'red' }}>{error}</p>
+        ) : (
+            <>
+              <p>Connected to: {address || 'Loading...'}</p>
+              <p>Balance: {balance ? `${balance} ETH` : 'Loading...'}</p>
+            </>
+        )}
+      </div>
+  );
 };
 
 export default App;
