@@ -16,6 +16,7 @@ const HomePage: React.FC = () => {
             setError(null);
             try {
                 const fetchedIdeas = await fetchLunchIdeas();
+                console.log("testing", fetchedIdeas)
                 setIdeas(fetchedIdeas);
             } catch (err) {
                 setError('Failed to fetch lunch ideas. Please try again later.');

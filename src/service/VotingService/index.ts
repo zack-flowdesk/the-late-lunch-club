@@ -3,6 +3,8 @@
 const storageKey = 'isVotingActive';
 
 const getVotingStatus = (): boolean => {
+
+
     return JSON.parse(localStorage.getItem(storageKey) || 'false');
 };
 
