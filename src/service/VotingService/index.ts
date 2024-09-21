@@ -1,30 +1,26 @@
 // src/service/VotingService.ts
 
-class VotingService {
-    private storageKey = 'isVotingActive';
+const storageKey = 'isVotingActive';
 
-    constructor() {
-        // Initialize local storage if needed
-        if (!localStorage.getItem(this.storageKey)) {
-            localStorage.setItem(this.storageKey, JSON.stringify(false));
-        }
-    }
+const getVotingStatus = (): boolean => {
+    return JSON.parse(localStorage.getItem(storageKey) || 'false');
+};
 
-    getVotingStatus(): boolean {
-        return JSON.parse(localStorage.getItem(this.storageKey) || 'false');
-    }
+const startVoting = (): void => {
+    localStorage.setItem(storageKey, JSON.stringify(true));
+};
 
-    startVoting(): void {
-        localStorage.setItem(this.storageKey, JSON.stringify(true));
-    }
+const endVoting = (): void => {
+    localStorage.setItem(storageKey, JSON.stringify(false));
+};
 
-    endVoting(): void {
-        localStorage.setItem(this.storageKey, JSON.stringify(false));
-    }
+// You can add future API interaction functions here
+// e.g., syncVotingWithAPI, fetchVotingStatusFromAPI, etc.
 
-    // Add future API interaction methods here
-    // e.g., syncVotingWithAPI(), fetchVotingStatusFromAPI(), etc.
-}
+const VotingService = {
+    getVotingStatus,
+    startVoting,
+    endVoting,
+};
 
-const votingService = new VotingService();
-export default votingService;
+export default VotingService;
