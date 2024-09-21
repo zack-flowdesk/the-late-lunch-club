@@ -1,6 +1,9 @@
 import React, {useEffect, useState} from 'react';
 import {useVoting} from '../../context/voting';
 import {fetchLunchIdeas, proposeLunchIdea} from "../../service/LunchService";
+import {Button, Input, List, Spin, Typography, message as antdMessage} from 'antd';
+
+const {Title, Text} = Typography;
 
 const HomePage: React.FC = () => {
     const {isVotingActive} = useVoting();
@@ -16,7 +19,6 @@ const HomePage: React.FC = () => {
             setError(null);
             try {
                 const fetchedIdeas = await fetchLunchIdeas();
-                console.log("testing", fetchedIdeas)
                 setIdeas(fetchedIdeas);
             } catch (err) {
                 setError('Failed to fetch lunch ideas. Please try again later.');
@@ -28,20 +30,19 @@ const HomePage: React.FC = () => {
     }, []);
 
     const handleVote = (place: string) => {
-        console.log(`Voted for: ${place}`);
-        setMessage(`You voted for ${place}!`);
+        antdMessage.success(`You voted for ${place}!`);
     };
 
     const handleProposeIdea = async () => {
         if (newIdea.trim()) {
             if (ideas.includes(newIdea.trim())) {
-                setMessage(`"${newIdea}" is already on the list!`);
+                antdMessage.warning(`"${newIdea}" is already on the list!`);
             } else {
                 setLoading(true);
                 setError(null);
                 try {
                     await proposeLunchIdea(newIdea.trim());
-                    setMessage(`Proposed new idea: "${newIdea.trim()}"`);
+                    antdMessage.success(`Proposed new idea: "${newIdea.trim()}"`);
                     setNewIdea('');
                     // Fetch the updated list after proposing
                     const updatedIdeas = await fetchLunchIdeas();
@@ -53,42 +54,51 @@ const HomePage: React.FC = () => {
                 }
             }
         } else {
-            setMessage('Please enter a valid idea.');
+            antdMessage.error('Please enter a valid idea.');
         }
     };
 
     return (
-        <div>
-            <h1>Home Page</h1>
+        <div style={{padding: '20px', maxWidth: '600px', margin: '0 auto'}}>
+            <Title level={2}>Home Page</Title>
             {loading ? (
-                <p>Loading lunch ideas...</p>
+                <Spin tip="Loading lunch ideas..." size="large"/>
             ) : error ? (
-                <p style={{color: 'red'}}>{error}</p>
+                <Text type="danger">{error}</Text>
             ) : isVotingActive ? (
                 <div>
-                    <h2>Select a Lunch Place</h2>
-                    <ul>
-                        {ideas.map((idea) => (
-                            <li key={idea}>
+                    <Title level={3}>Select a Lunch Place</Title>
+                    <List
+                        bordered
+                        dataSource={ideas}
+                        renderItem={idea => (
+                            <List.Item
+                                actions={[
+                                    <Button type="primary" onClick={() => handleVote(idea)}>
+                                        Vote
+                                    </Button>
+                                ]}
+                            >
                                 {idea}
-                                <button onClick={() => handleVote(idea)}>Vote</button>
-                            </li>
-                        ))}
-                    </ul>
-                    <div>
-                        <input
-                            type="text"
+                            </List.Item>
+                        )}
+                    />
+                    <div style={{marginTop: '20px'}}>
+                        <Input
                             value={newIdea}
                             onChange={(e) => setNewIdea(e.target.value)}
                             placeholder="Propose a new idea"
+                            style={{width: '70%', marginRight: '10px'}}
                         />
-                        <button onClick={handleProposeIdea}>Propose Idea</button>
+                        <Button type="dashed" onClick={handleProposeIdea}>
+                            Propose Idea
+                        </Button>
                     </div>
                 </div>
             ) : (
-                <p>No active voting round. Please wait for the admin to start a voting round.</p>
+                <Text>No active voting round. Please wait for the admin to start a voting round.</Text>
             )}
-            {message && <p>{message}</p>}
+            {message && <Text>{message}</Text>}
         </div>
     );
 };
