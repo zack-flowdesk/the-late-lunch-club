@@ -1,27 +1,55 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {useVoting} from '../../context/voting';
+import {fetchLunchIdeas, proposeLunchIdea} from "../../service/lunchService";
 
 const HomePage: React.FC = () => {
     const {isVotingActive} = useVoting();
-    const [ideas, setIdeas] = useState<string[]>(['Pizza', 'Sushi', 'Burgers']);
+    const [ideas, setIdeas] = useState<string[]>([]);
     const [newIdea, setNewIdea] = useState('');
     const [message, setMessage] = useState('');
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        const loadLunchIdeas = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                const fetchedIdeas = await fetchLunchIdeas();
+                setIdeas(fetchedIdeas);
+            } catch (err) {
+                setError('Failed to fetch lunch ideas. Please try again later.');
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadLunchIdeas();
+    }, []);
 
     const handleVote = (place: string) => {
-        // Logic to handle voting for a place
         console.log(`Voted for: ${place}`);
         setMessage(`You voted for ${place}!`);
-        // Here you can update the state or send the vote to the backend
     };
 
-    const handleProposeIdea = () => {
+    const handleProposeIdea = async () => {
         if (newIdea.trim()) {
             if (ideas.includes(newIdea.trim())) {
                 setMessage(`"${newIdea}" is already on the list!`);
             } else {
-                setIdeas((prevIdeas) => [...prevIdeas, newIdea.trim()]);
-                setMessage(`Proposed new idea: "${newIdea.trim()}"`);
-                setNewIdea('');
+                setLoading(true);
+                setError(null);
+                try {
+                    await proposeLunchIdea(newIdea.trim());
+                    setMessage(`Proposed new idea: "${newIdea.trim()}"`);
+                    setNewIdea('');
+                    // Fetch the updated list after proposing
+                    const updatedIdeas = await fetchLunchIdeas();
+                    setIdeas(updatedIdeas);
+                } catch (err) {
+                    setError('Failed to propose new idea. Please try again.');
+                } finally {
+                    setLoading(false);
+                }
             }
         } else {
             setMessage('Please enter a valid idea.');
@@ -31,7 +59,11 @@ const HomePage: React.FC = () => {
     return (
         <div>
             <h1>Home Page</h1>
-            {isVotingActive ? (
+            {loading ? (
+                <p>Loading lunch ideas...</p>
+            ) : error ? (
+                <p style={{color: 'red'}}>{error}</p>
+            ) : isVotingActive ? (
                 <div>
                     <h2>Select a Lunch Place</h2>
                     <ul>
