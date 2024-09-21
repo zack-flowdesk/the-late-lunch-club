@@ -1,9 +1,10 @@
 import React, {useState} from 'react';
+import {useVoting} from '../../context/voting';
 
 const AdminPage: React.FC = () => {
+    const {startVoting, endVoting, isVotingActive} = useVoting();
     const [members, setMembers] = useState<string[]>([]);
     const [newMember, setNewMember] = useState('');
-    const [isVotingActive, setIsVotingActive] = useState(false);
 
     const handleAddMember = () => {
         if (newMember) {
@@ -12,20 +13,9 @@ const AdminPage: React.FC = () => {
         }
     };
 
-    const handleStartRound = () => {
-        setIsVotingActive(true);
-        // Logic to start the voting round (e.g., notify members)
-    };
-
-    const handleEndRound = () => {
-        setIsVotingActive(false);
-        // Logic to end the voting round (e.g., tally votes)
-    };
-
     return (
         <div>
             <h1>Admin Page</h1>
-
             <div>
                 <h2>Add Members</h2>
                 <input
@@ -41,13 +31,12 @@ const AdminPage: React.FC = () => {
                     ))}
                 </ul>
             </div>
-
             <div>
                 <h2>Voting Round</h2>
-                <button onClick={handleStartRound} disabled={isVotingActive}>
+                <button onClick={startVoting} disabled={isVotingActive}>
                     Start Voting Round
                 </button>
-                <button onClick={handleEndRound} disabled={!isVotingActive}>
+                <button onClick={endVoting} disabled={!isVotingActive}>
                     End Voting Round
                 </button>
                 {isVotingActive ? <p>Voting is currently active!</p> : <p>No active voting round.</p>}
