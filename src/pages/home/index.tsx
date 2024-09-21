@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {useVoting} from '../../context/voting';
-import {fetchLunchIdeas, proposeLunchIdea} from "../../service/lunchService";
+import {fetchLunchIdeas, proposeLunchIdea} from "../../service/LunchService";
 
 const HomePage: React.FC = () => {
     const {isVotingActive} = useVoting();
