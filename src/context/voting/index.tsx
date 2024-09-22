@@ -1,37 +1,44 @@
-import React, {createContext, useContext, useState, useEffect} from 'react';
+import React, {createContext, useContext, useState, useEffect, useCallback} from 'react';
+import VotingService from '../../service/VotingService';
+import CirclesSDKContext from '../../CirclesSDKContext';
 
 interface VotingContextType {
-    isVotingActive: boolean;
-    startVoting: () => void;
+    getVotingStatus: () => Promise<boolean>;
+    getVotingTitle: () => Promise<string>;
+    startVoting: (title: string) => void
     endVoting: () => void;
 }
 
 const VotingContext = createContext<VotingContextType | undefined>(undefined);
 
-export const VotingProvider: React.FC<{ children: React.ReactNode }> = ({children}) => {
-    const [isVotingActive, setIsVotingActive] = useState<boolean>(() => {
-        // Initialize state from local storage
-        const storedState = localStorage.getItem('isVotingActive');
-        return storedState ? JSON.parse(storedState) : false;
-    });
+export const VotingProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const [voteTitle, setVoteTitle] = useState<string>('');
+    const { contract } = useContext(CirclesSDKContext);
 
-    const startVoting = () => {
-        setIsVotingActive(true);
-        localStorage.setItem('isVotingActive', JSON.stringify(true)); // Save to local storage
-    };
+    const startVoting = useCallback(async (title: string) => {
+        if (!contract) return;
+        setVoteTitle(title);
+        await VotingService.startVoting(contract, title);
+    }, [contract]);
 
-    const endVoting = () => {
-        setIsVotingActive(false);
-        localStorage.setItem('isVotingActive', JSON.stringify(false)); // Save to local storage
-    };
+    const endVoting = useCallback(async () => {
+        if (!contract) return;
+        await VotingService.endVoting(contract);
+    }, [contract]);
 
-    useEffect(() => {
-        // Update local storage whenever the voting state changes
-        localStorage.setItem('isVotingActive', JSON.stringify(isVotingActive));
-    }, [isVotingActive]);
+    const getVotingStatus = useCallback(async () => {
+        if (!contract) return false;
+        return await VotingService.getVotingStatus(contract);
+    }, [contract]);
+
+    const getVotingTitle = useCallback(async () => {
+        if (!contract) return '';
+        return await VotingService.getVotingTitle(contract);
+    }, [contract]);
+    
 
     return (
-        <VotingContext.Provider value={{isVotingActive, startVoting, endVoting}}>
+        <VotingContext.Provider value={{ getVotingStatus, getVotingTitle, startVoting, endVoting }}>
             {children}
         </VotingContext.Provider>
     );

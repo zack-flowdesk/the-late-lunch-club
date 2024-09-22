@@ -1,27 +1,22 @@
-import {ethers} from "ethers";
-import contractABI from './IdeaVoting.json'; // Adjust the path if necessary
+import { Contract } from "ethers";
 
+export const mockIdeas = ['Pizza', 'Sushi', 'Burgers'];
 
-export const mockLunchIdeas = ['Pizza', 'Sushi', 'Burgers'];
-
-export const newFetchLunchIdeas = async (): Promise<string[]> => {
+export const newFetchIdeas = async (): Promise<string[]> => {
     return new Promise((resolve) => {
         setTimeout(() => {
-            resolve(mockLunchIdeas);
+            resolve(mockIdeas);
         }, 1000);
     });
 };
 
-export const fetchLunchIdeas = async (): Promise<string[]> => {
-    const providerUrl = 'https://gnosis-mainnet.public.blastapi.io';
-    const provider = new ethers.JsonRpcProvider(providerUrl);
+export const fetchRoundTitle = async (contract: Contract): Promise<string | null> => {
+    const isActive = await contract.isRoundActive();
+    if (!isActive) { return null; }
+    return await contract.getRoundTitle();
+}
 
-    // Create a contract instance
-    const contractAddress = '0x98ea56b8afa5ebb886084a8eb6bd6d47c38fa046';
-
-    const contract = new ethers.Contract(contractAddress, contractABI, provider);
-
-    // Example: Call a function on the contract
+export const fetchIdeas = async (contract: Contract): Promise<string[]> => {
     try {
         const result = await contract.getIdeasForCurrentRound(); // Replace with your actual function
 
@@ -34,6 +29,7 @@ export const fetchLunchIdeas = async (): Promise<string[]> => {
                 voteCount: result[3][i],
             })
         }
+        console.log({formattedResult})
 
         return formattedResult.map((idea) => idea.title);
     } catch (error) {

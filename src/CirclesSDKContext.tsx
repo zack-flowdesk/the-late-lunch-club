@@ -1,6 +1,9 @@
+import { GroupProfile, Profile, Profiles } from '@circles-sdk/profiles';
 import React, { createContext, useState, useEffect, useCallback } from "react";
 import { BrowserProviderContractRunner } from "@circles-sdk/adapter-ethers";
-import { Sdk } from "@circles-sdk/sdk";
+import { parseError, Sdk } from "@circles-sdk/sdk";
+import contractABI from './IdeaVoting.json';
+import {ethers} from "ethers";
 
 const CirclesSDKContext = createContext({
   sdk: null,
@@ -9,8 +12,12 @@ const CirclesSDKContext = createContext({
   adapter: null,
   circlesProvider: null,
   circlesAddress: null,
-  accountBalance: null,
+  personalBalance: 0,
+  groupBalance: 0,
+  avatar: null,
+  contract: null,
   initSdk: async () => {},
+  updateBalances: async () => {},
 });
 
 export const CirclesSDK = ({ children }: { children: any }) => {
@@ -19,7 +26,10 @@ export const CirclesSDK = ({ children }: { children: any }) => {
   const [adapter, setAdapter] = useState<any>(null);
   const [circlesProvider, setCirclesProvider] = useState<any>(null);
   const [circlesAddress, setCirclesAddress] = useState<any>(null);
-  const [accountBalance, setAccountBalance] = useState<any>(null);
+  const [avatar, setAvatar] = useState<any>(null);
+  const [personalBalance, setPersonalBalance] = useState(0);
+  const [groupBalance, setGroupBalance] = useState(0);
+  const [contract, setContract] = useState<any>(null);
 
   const chainConfig = {
     pathfinderUrl: "https://pathfinder.aboutcircles.com",
@@ -47,18 +57,55 @@ export const CirclesSDK = ({ children }: { children: any }) => {
       setSdk(sdk); // Set the SDK in the state
       setIsConnected(true);
 
+      const contractAddress = '0xF85f0661F172128FC55b741e3581009a76EeEa85';
+      const contract = new ethers.Contract(contractAddress, contractABI, adapter);
+      setContract(contract);
+
       if (circlesAddress) {
+        console.log("Circles address:", circlesAddress);
         const avatar = await sdk.getAvatar(circlesAddress);
-        console.log({avatar});
-        const balance = await avatar.getTotalBalance();
-        setAccountBalance(balance);
+        setAvatar(avatar);
+      } else {
+        console.error("No Circles address found!");
       }
+
+      await updateBalances();
     } catch (error) {
       console.error("Error initializing SDK:", error);
     }
   }, []);
 
-  useEffect(() => {}, [initSdk]);
+  useEffect(() => {
+    if (!isConnected) {
+      initSdk();
+    }
+  }, [isConnected, initSdk]);
+
+  const updateBalances = useCallback(async () => {
+    if (!avatar) return;
+    const allBalances = await avatar.getBalances();
+    console.log({ allBalances });
+    const personalBalance = allBalances.reduce((acc: number, balance: any) => {
+      if (balance.isErc1155 && !balance.isGroup) {
+        return acc + balance.circles;
+      }
+      return acc;
+    }, 0);
+    const groupBalance = allBalances.reduce((acc: number, balance: any) => {
+      if (balance.isErc1155 && balance.isGroup) {
+        return acc + balance.circles;
+      }
+      return acc;
+    }, 0);
+    setPersonalBalance(personalBalance);
+    setGroupBalance(groupBalance);
+  }, [sdk, avatar]);
+
+  useEffect(() => {
+    if (sdk && avatar) {
+      updateBalances();
+    }
+  }, [sdk, avatar, updateBalances]);
 
   return (
     <CirclesSDKContext.Provider
@@ -69,7 +116,11 @@ export const CirclesSDK = ({ children }: { children: any }) => {
         adapter,
         circlesProvider,
         circlesAddress,
-        accountBalance,
+        personalBalance,
+        groupBalance,
+        avatar,
+        contract,
+        updateBalances,
         initSdk,
       }}
     >

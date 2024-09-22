@@ -1,19 +1,21 @@
-// src/service/VotingService.ts
+import { Contract } from "ethers";
 
-const storageKey = 'isVotingActive';
-
-const getVotingStatus = (): boolean => {
-
-
-    return JSON.parse(localStorage.getItem(storageKey) || 'false');
+const getVotingStatus = async (contract: Contract): Promise<boolean> => {
+    const status = await contract.isRoundActive();
+    return status !== undefined ? status : false;
 };
 
-const startVoting = (): void => {
-    localStorage.setItem(storageKey, JSON.stringify(true));
+const getVotingTitle = async (contract: Contract): Promise<string> => {
+    const title = await contract.roundTitle();
+    return title !== undefined ? title : '';
+}
+
+const startVoting = async (contract: Contract, title: string): Promise<void> => {
+    return contract.start(title);
 };
 
-const endVoting = (): void => {
-    localStorage.setItem(storageKey, JSON.stringify(false));
+const endVoting = async (contract: Contract): Promise<void> => {
+    return contract.end();
 };
 
 // You can add future API interaction functions here
@@ -21,6 +23,7 @@ const endVoting = (): void => {
 
 const VotingService = {
     getVotingStatus,
+    getVotingTitle,
     startVoting,
     endVoting,
 };

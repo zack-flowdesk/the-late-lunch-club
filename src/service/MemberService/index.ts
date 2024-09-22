@@ -1,19 +1,19 @@
+import { Avatar } from "@circles-sdk/sdk";
+
 // src/service/memberService.ts
-const MEMBER_KEY = 'members';
 
-export const fetchMembers = async (): Promise<string[]> => {
-    const members = localStorage.getItem(MEMBER_KEY);
-    return members ? JSON.parse(members) : [];
+export const fetchMembers = async (avatar: any): Promise<string[]> => {
+    if (!avatar) return [];
+    
+    const relations = await (avatar as unknown as Avatar).getTrustRelations();
+    const members = relations.filter(({relation}) => ['trusts', 'mutuallyTrusts'].includes(relation)).map(({objectAvatar}) => objectAvatar);
+    return members;
 };
 
-export const addMember = async (member: string): Promise<void> => {
-    const members = await fetchMembers();
-    members.push(member);
-    localStorage.setItem(MEMBER_KEY, JSON.stringify(members));
+export const addMember = async (avatar: any, member: string): Promise<void> => {
+    await (avatar as unknown as Avatar).trust(member);
 };
 
-export const removeMember = async (memberToRemove: string): Promise<void> => {
-    const members = await fetchMembers();
-    const updatedMembers = members.filter(member => member !== memberToRemove);
-    localStorage.setItem(MEMBER_KEY, JSON.stringify(updatedMembers));
+export const removeMember = async (avatar: any, memberToRemove: string): Promise<void> => {
+    await (avatar as unknown as Avatar).untrust(memberToRemove);
 };
